@@ -1,18 +1,63 @@
-/**
- * Welcome to Cloudflare Workers! This is your first worker.
- *
- * - Run `npm run dev` in your terminal to start a development server
- * - Open a browser tab at http://localhost:8787/ to see your worker in action
- * - Run `npm run deploy` to publish your worker
- *
- * Bind resources to your worker in `wrangler.toml`. After adding bindings, a type definition for the
- * `Env` object can be regenerated with `npm run cf-typegen`.
- *
- * Learn more at https://developers.cloudflare.com/workers/
- */
+import { Hono } from 'hono';
+import { Twilio } from 'twilio';
+import { WorkflowEntrypoint, WorkflowEvent, WorkflowStep } from 'cloudflare:workers';
 
-export default {
-	async fetch(request, env, ctx): Promise<Response> {
-		return new Response('Hello World!');
-	},
-} satisfies ExportedHandler<Env>;
+type NeverGonnaParams = {
+	to: string;
+	content: string;
+	host: string;
+};
+
+export class NeverGonnaWorkflow extends WorkflowEntrypoint<Env, NeverGonnaParams> {
+	async run(event: WorkflowEvent<NeverGonnaParams>, step: WorkflowStep) {
+		const { to, host, content } = event.payload;
+		await step.sleep('wait for the right moment', '39 seconds');
+		const callSid = await step.do('call person back', async () => {
+			const client = new Twilio(this.env.TWILIO_ACCOUNT_SID, this.env.TWILIO_AUTH_TOKEN);
+			const twiml = `
+			<Response>
+				<Say>Hello from a Cloudflare Workflow!</Say>
+				<Say>You said "${content}".</Say>
+				<Say>Check out this classic song:</Say>
+				<Play>https://${host}/classic.mp3</Play>
+			</Response>`;
+			const call = await client.calls.create({
+				to,
+				from: this.env.TWILIO_PHONE_NUMBER,
+				twiml,
+			});
+			return call.sid;
+		});
+
+		return { success: true, callSid };
+	}
+}
+
+const app = new Hono<{ Bindings: Env }>();
+
+app.post('/incoming', async (c) => {
+	const body = await c.req.parseBody();
+	// TwiML is Twilio Markup Language. If you respond to the webhook request with TwiML it will perform actions.
+	// This TwiML replies by using the Message TwiML verb.
+	const twiml = `
+	<Response>
+		<Message>
+			This message was sent from a Cloudflare Worker. 🧡
+		</Message>
+	</Response>`;
+	// Kickoff the Workflow
+	await c.env.NEVER_GONNA.create({
+		params: {
+			to: body.From,
+			content: body.Body,
+			host: c.req.header('Host'),
+		},
+	});
+	return new Response(twiml, {
+		headers: {
+			'Content-Type': 'application/xml',
+		},
+	});
+});
+
+export default app;
