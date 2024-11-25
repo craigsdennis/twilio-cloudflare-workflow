@@ -1,7 +1,7 @@
 # Cloudflare Workflows 🧡 Twilio
 
 
-[<img src="https://img.youtube.com/vi/L6gR4Yr3UW8/0.jpg">](https://youtu.be/Pz0-mFk6aBM "Schedule Twilio Messaging and Phone Calls with Cloudflare Workflows")
+[<img src="https://img.youtube.com/vi/Pz0-mFk6aBM/0.jpg">](https://youtu.be/Pz0-mFk6aBM "Schedule Twilio Messaging and Phone Calls with Cloudflare Workflows")
 
 This repo is an example of how to use Cloudflare Workers + [Workflows](https://developers.cloudflare.com/workflows) to create a time based Twilio experience.
 
