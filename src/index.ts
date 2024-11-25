@@ -11,7 +11,7 @@ type NeverGonnaParams = {
 export class NeverGonnaWorkflow extends WorkflowEntrypoint<Env, NeverGonnaParams> {
 	async run(event: WorkflowEvent<NeverGonnaParams>, step: WorkflowStep) {
 		const { to, host, content } = event.payload;
-		await step.sleep('wait for the right moment', '139 seconds');
+		await step.sleep('wait for the right moment', '135 seconds');
 		const callSid = await step.do('call person back', async () => {
 			const client = new Twilio(this.env.TWILIO_ACCOUNT_SID, this.env.TWILIO_AUTH_TOKEN);
 			// Say verb here does text to speech
